@@ -1,24 +1,7 @@
-# README
+Database Schema
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+![alt text](https://i.ibb.co/jbZPs4w/download.png)
 
-Things you may want to cover:
+to run the project you need to do the following 
 
-* Ruby version
-
-* System dependencies
-
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+`docker-compose up`

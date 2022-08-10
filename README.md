@@ -1,4 +1,4 @@
-<h2> Instabug Code Challenge </h2>
+<h2> Instabug Back-end Challenge </h2>
 
 # Contents
  - [About](#about) 

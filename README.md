@@ -1,4 +1,4 @@
-<h2> Instabug Code Challenge </h2>
+<h2> Instabug Back-end Challenge </h2>
 
 # Contents
  - [About](#about) 
@@ -21,7 +21,7 @@
 
 ## Database Schema
 
-![alt text](https://i.ibb.co/nRw9qm1/download-4.png)
+![schema](instabug_final.png)
 
 ## Pre Installations
 

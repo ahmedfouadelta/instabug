@@ -21,7 +21,7 @@
 
 ## Database Schema
 
-![schema](instabug_final.png)
+![schema](instabug_final_schema.png)
 
 ## Pre Installations
 

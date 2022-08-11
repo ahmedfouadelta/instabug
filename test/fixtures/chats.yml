@@ -1,0 +1,13 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  app_token: MyString
+  creation_number: 1
+  messages_count: MyString
+  integer: MyString
+
+two:
+  app_token: MyString
+  creation_number: 1
+  messages_count: MyString
+  integer: MyString

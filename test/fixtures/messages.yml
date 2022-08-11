@@ -1,0 +1,15 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  application_token: MyString
+  chat_creation_number: 1
+  creation_number: 1
+  message_body: MyString
+  string: MyString
+
+two:
+  application_token: MyString
+  chat_creation_number: 1
+  creation_number: 1
+  message_body: MyString
+  string: MyString

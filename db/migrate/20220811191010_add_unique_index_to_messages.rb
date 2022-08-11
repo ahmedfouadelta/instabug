@@ -1,5 +1,5 @@
 class AddUniqueIndexToMessages < ActiveRecord::Migration[5.0]
   def change
-    add_index :messages, [:creation_number, :chat_creation_number , :application_token], unique: true, name: 'messages_triple_index'
+    add_index :messages, [:application_token, :chat_number ,:message_number], unique: true, name: "index_messages_on_app_token_and_chat_no_and_msg_no"
   end
 end

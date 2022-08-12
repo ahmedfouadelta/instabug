@@ -1,13 +1,13 @@
+require "redis"
 class ApplicationsController < ApplicationController
   def create
     begin
       app = Application.create!(name: application_params[:name], token: (SecureRandom.hex 12))
-      x = 10
+      
       render(
         json: {
           success: true,
           Application: ApplicationSerializer.new(app).to_hash[:data][:attributes],
-          blabla: x,
         },
           status: :created,
       )

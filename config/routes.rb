@@ -1,9 +1,7 @@
 Rails.application.routes.draw do
-  post 'applications/create'
-
-  get 'applications/show'
-
-  get 'applications/update'
+  post 'applications/create', to: "applications#create"
+  get 'applications/show', to: "applications#show"
+  put 'applications/update', to: "applications#update"
 
   get 'messages/create'
 

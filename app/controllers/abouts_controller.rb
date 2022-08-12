@@ -1,7 +1,5 @@
-class AboutController < ApplicationController
+class AboutsController < ApplicationController
     def index
-        x = 10
-        byebug
         render json: {
             message: "hello world",
         }, status: 200

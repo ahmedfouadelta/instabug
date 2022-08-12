@@ -1,4 +1,10 @@
 Rails.application.routes.draw do
+  post 'applications/create'
+
+  get 'applications/show'
+
+  get 'applications/update'
+
   get 'messages/create'
 
   get 'messages/update'
@@ -15,12 +21,6 @@ Rails.application.routes.draw do
 
   get 'chats/show'
 
-  get 'apps/create'
-
-  get 'apps/show'
-
-  get 'apps/update'
-
   # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
-  get "about", to: "about#index"
+  get "about", to: "abouts#index"
 end

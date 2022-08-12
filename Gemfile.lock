@@ -39,11 +39,14 @@ GEM
       minitest (~> 5.1)
       tzinfo (~> 1.1)
     arel (7.1.4)
+    awesome_print (1.9.2)
     builder (3.2.4)
     byebug (11.1.3)
     concurrent-ruby (1.1.10)
     crass (1.0.6)
     erubis (2.7.0)
+    fast_jsonapi (1.5)
+      activesupport (>= 4.2)
     ffi (1.15.5)
     globalid (1.0.0)
       activesupport (>= 5.0)
@@ -59,10 +62,12 @@ GEM
       mini_mime (>= 0.1.1)
     method_source (1.0.0)
     mini_mime (1.1.2)
+    mini_portile2 (2.6.1)
     minitest (5.15.0)
     mysql2 (0.5.4)
     nio4r (2.5.8)
-    nokogiri (1.12.5-x86_64-linux)
+    nokogiri (1.12.5)
+      mini_portile2 (~> 2.6.1)
       racc (~> 1.4)
     puma (3.12.6)
     racc (1.6.0)
@@ -119,11 +124,14 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  awesome_print
   byebug
+  fast_jsonapi
   listen (~> 3.0.5)
   mysql2 (>= 0.3.18, < 0.6.0)
   puma (~> 3.0)
   rails (~> 5.0.7)
+  rake
   spring
   spring-watcher-listen (~> 2.0.0)
   tzinfo-data

@@ -8,7 +8,7 @@ class ApplicationsController < ApplicationController
       render(
         json: {
           success: true,
-          Application: ApplicationSerializer.new(app).to_hash[:data][:attributes],
+          Application: ApplicationSerializer.new(app).to_h,
         },
           status: :created,
       )
@@ -24,7 +24,7 @@ class ApplicationsController < ApplicationController
       render(
         json: {
           success: true,
-          Application: ApplicationSerializer.new(app).to_hash[:data][:attributes],
+          Application: ApplicationSerializer.new(app).to_h,
         },
           status: :ok
       )
@@ -41,7 +41,7 @@ class ApplicationsController < ApplicationController
       render(
         json: {
           success: true,
-          Application: ApplicationSerializer.new(app).to_hash[:data][:attributes],
+          Application: ApplicationSerializer.new(app).to_h,
         },
           status: :ok
       )

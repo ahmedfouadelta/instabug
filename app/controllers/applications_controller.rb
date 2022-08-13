@@ -19,6 +19,19 @@ class ApplicationsController < ApplicationController
   end
 
   def show
+    begin
+      app = Application.find_by!(token: request.headers["TOKEN"])
+      render(
+        json: {
+          success: true,
+          Application: ApplicationSerializer.new(app).to_hash[:data][:attributes],
+        },
+          status: :ok
+      )
+
+    rescue
+      render json: { error: "Something went wrong" }, status: 500
+    end
   end
 
   def update

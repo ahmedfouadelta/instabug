@@ -21,6 +21,7 @@ gem 'redis'
 gem 'rake'
 gem 'redis-rails'
 gem 'unicorn'
+gem 'sidekiq'
 
 # Use Capistrano for deployment
 # gem 'capistrano-rails', group: :development

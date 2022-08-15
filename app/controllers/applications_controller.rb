@@ -3,8 +3,6 @@ class ApplicationsController < ApplicationController
   def create
     begin
       app = Application.create!(name: application_params[:name], token: (SecureRandom.hex 12))
-      redis = Redis.new(host: "host.docker.internal")
-      redis.set("mykey", "hello world")
       render(
         json: {
           success: true,

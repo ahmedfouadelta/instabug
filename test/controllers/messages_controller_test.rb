@@ -16,8 +16,8 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "should get list" do
-    get messages_list_url
+  test "should get index" do
+    get messages_index_url
     assert_response :success
   end
 

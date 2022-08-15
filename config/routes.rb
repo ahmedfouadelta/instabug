@@ -15,15 +15,11 @@ Rails.application.routes.draw do
   get 'chats', to: "chats#index"
   get 'chats/show', to: "chats#show"
 
-  get 'messages/create'
-
-  get 'messages/update'
-
-  get 'messages/show'
-
-  get 'messages/list'
-
-  get 'messages/search'
+  post 'messages/create', to: "messages#create"
+  put 'messages/update', to: "messages#update"
+  get 'messages/show', to: "messages#show"
+  get 'messages', to: "messages#index"
+  get 'messages/search', to: "messages#search"
 
   # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
   get "about", to: "abouts#index"

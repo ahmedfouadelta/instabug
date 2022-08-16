@@ -10,7 +10,7 @@ class MessageRepo
     )
     return nil if message.nil?
 
-    redis.set("Message_#{application_token}_#{chat_number}_#{message_number}", app.to_json, nx: true, px: 86400000)
+    redis.set("Message_#{application_token}_#{chat_number}_#{message_number}", message.to_json, nx: true, px: 86400000)
     return message
   end
 end

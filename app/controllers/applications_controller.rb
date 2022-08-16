@@ -18,7 +18,8 @@ class ApplicationsController < ApplicationController
 
   def show
     begin
-      app = Application.find_by!(token: request.headers["TOKEN"])
+      app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
+      return render json: { error: "Application's not found" }, status: 404  if app.nil?
       render(
         json: {
           success: true,

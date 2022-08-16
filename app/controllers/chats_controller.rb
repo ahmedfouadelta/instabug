@@ -50,18 +50,11 @@ class ChatsController < ApplicationController
 
   def show
     begin
-      app = Application.find_by(token: request.headers["TOKEN"])
-      chat = app.chats&.find_by(chat_number: chat_params[:chat_number])
+      app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
+      return render json: { error: "Application's not found" }, status: 404  if app.nil?
 
-      if chat.nil? && chat_params[:chat_number] > app.chats_count
-        render json: { error: "no chat was created with this number for this app" }, status: 404
-        return
-      elsif chat.nil? && chat_params[:chat_number] <= app.chats_count
-        chat = {chat_number: chat_params[:chat_number], messages_count: 0}
-        
-      else
-        chat = ChatSerializer.new(chat).to_h
-      end
+      chat = ChatRepo.new.load_chat(request.headers["TOKEN"], chat_params[:chat_number])
+      return render json: { error: "Chat's not found" }, status: 404 if chat.nil?
 
       render(
         json: {

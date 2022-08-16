@@ -4,7 +4,7 @@ class MessagesController < ApplicationController
     @redis = Redis.new(host: "host.docker.internal")
   end
 
-  def create_v2
+  def create
     begin
       app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
       return render json: { error: "Application's not found" }, status: 404  if app.nil?
@@ -55,69 +55,8 @@ class MessagesController < ApplicationController
         },
           status: :created,
       )
-    rescue => e
-      byebug
-      remove_lock("Lock_Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val)
-      return render json: { error: "Something went wrong" }, status: 500
-    end
-  end
-
-  def create
-    app_lock_val = chat_lock_val = nil
-    begin
-      # add a lock here on redis for app with this token
-      app_lock_val = add_lock("Application_#{request.headers["TOKEN"]}"); raise if app_lock_val == false
-
-      app = Application.find_by(token: request.headers["TOKEN"])
-      if app.nil?
-        # release the app lock
-        remove_lock("Application_#{request.headers["TOKEN"]}", app_lock_val)
-        return render json: { error: "no app exists with this token" }, status: 404 
-      end
-
-      # add a lock here on redis for chat with this app token and chat number
-      chat_lock_val = add_lock("Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}"); raise if chat_lock_val == false
-
-      chat = app.chats.find_by(chat_number: message_params[:chat_number])
-      if chat.nil? && message_params[:chat_number] > app.chats_count
-        # release the chat lock
-        remove_lock("Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val)
-        # release the app lock
-        remove_lock("Application_#{request.headers["TOKEN"]}", app_lock_val)
-        render json: { error: "no chat with this number exists" }, status: 404
-      elsif message_params[:chat_number] <= app.chats_count
-        if chat.nil? 
-          chat = Chat.create!(
-            application_id: app.id, application_token: request.headers["TOKEN"],
-            messages_count: 1, chat_number: message_params[:chat_number]
-          )
-        else
-          chat.update!(messages_count: chat.messages_count+1)
-        end
-        redis = Redis.new(host: "host.docker.internal")
-        redis.set("#{app.token}_#{chat.chat_number.to_s}_#{chat.messages_count.to_s}", message_params[:body])
-        CreateMessageJob.perform_sync(
-          chat.id, app.token, chat.chat_number, chat.messages_count, message_params[:body]
-        )
-        # release the chat lock
-        remove_lock("Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val)
-        # release the app lock
-        remove_lock("Application_#{request.headers["TOKEN"]}", app_lock_val)
-        render(
-          json: {
-            success: true,
-            message: {
-              message_number: chat.messages_count,
-              body: message_params[:body],  
-            }
-          },
-            status: :created,
-        )
-
-      end
     rescue
-      remove_lock("Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val)
-      remove_lock("Application_#{request.headers["TOKEN"]}", app_lock_val)
+      remove_lock("Lock_Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val)
       return render json: { error: "Something went wrong" }, status: 500
     end
   end
@@ -188,46 +127,26 @@ class MessagesController < ApplicationController
   end
 
   def show
-    app = Application.find_by(token: request.headers["TOKEN"]) 
-    if app.nil?
-      return render json: { error: "no app exists with this token" }, status: 404 
-    end
+    begin
+      app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
+      return render json: { error: "Application's not found" }, status: 404  if app.nil?
 
-    chat = app.chats.find_by(chat_number: message_params[:chat_number])
-    if chat.nil? && message_params[:chat_number] > app.chats_count
-      return render json: { error: "no chat exists with this number" }, status: 404
-    elsif chat.nil? && message_params[:chat_number] <= app.chats_count
-      return render json: { error: "no message exist with this number" }, status: 404
-    end
+      chat = ChatRepo.new.load_chat(request.headers["TOKEN"], message_params[:chat_number])
+      return render json: { error: "Chat's not found" }, status: 404 if chat.nil?
 
-    message = chat.messages.find_by(
-      application_token: request.headers["TOKEN"], message_number: message_params[:message_number],
-      chat_number: message_params[:chat_number]
-    )
+      message = MessageRepo.new.load_message(request.headers["TOKEN"], chat.chat_number, message_params[:message_number])
+      return render json: { error: "Message's not found" }, status: 404 if message.nil?
 
-    if message.nil? &&  message_params[:message_number] > chat.messages_count
-      return render json: { error: "no message exist with this number" }, status: 404
-    elsif message.nil? &&  message_params[:message_number] <= chat.messages_count
-      redis = Redis.new(host: "host.docker.internal")
-      message_body = redis.get("#{request.headers["TOKEN"]}_#{message_params[:chat_number].to_s}_#{message_params[:message_number].to_s}")
-      return render(
-        json: {
-          success: true,
-          message: {
-            message_number: message_params[:message_number],
-            body: message_body,
-          }
-        },
-          status: :ok,
-      )
-    else
-      return render(
+      render(
         json: {
           success: true,
           message: MessageSerializer.new(message).to_h
         },
           status: :ok,
       )
+
+    rescue
+      render json: { error: "Something went wrong" }, status: 500
     end
   end
 

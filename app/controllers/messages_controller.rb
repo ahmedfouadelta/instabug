@@ -1,6 +1,69 @@
 require "redis"
 class MessagesController < ApplicationController
+  def initialize
+    @redis = Redis.new(host: "host.docker.internal")
+  end
+
+  def create_v2
+    begin
+      app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
+      return render json: { error: "Application's not found" }, status: 404  if app.nil?
+
+      chat_lock_val = add_lock("Lock_Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}"); raise if chat_lock_val == false
+
+      chat = ChatRepo.new.load_chat(request.headers["TOKEN"], message_params[:chat_number])
+      if chat.nil?
+        remove_lock("Lock_Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val)
+        return render json: { error: "Chat's not found" }, status: 404
+      end
+
+      chat.messages_count+=1;
+      message = Message.new(
+        application_token: app.token,
+        chat_number: chat.chat_number,
+        message_number: chat.messages_count,
+        body: message_params[:body]
+      )
+
+      CreateOrUpdateMessageJob.perform_in( #solve async problem
+        2.seconds, app.token, chat.chat_number, message.message_number #delay by 2 seconds needed to be added
+      )
+      
+      CreateOrUpdateChatJob.perform_in(20.seconds, app.token, chat.chat_number #delay by 2 seconds needed to be added
+      )
+     
+      success = @redis.multi do |multi|
+        multi.set(
+          "Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat.to_json, px: 86400000
+        )
+         #  multi.hincrby("Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", "messages_count", 1)
+        multi.set(
+          "Message_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}_#{message.message_number}",
+          message.to_json, px: 86400000
+        ) 
+      end
+
+
+
+      remove_lock("Lock_Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val)
+
+      raise if success != ["OK", "OK"]
+      render(
+        json: {
+          success: true,
+          message: MessageSerializer.new(message).to_h
+        },
+          status: :created,
+      )
+    rescue => e
+      byebug
+      remove_lock("Lock_Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val)
+      return render json: { error: "Something went wrong" }, status: 500
+    end
+  end
+
   def create
+    app_lock_val = chat_lock_val = nil
     begin
       # add a lock here on redis for app with this token
       app_lock_val = add_lock("Application_#{request.headers["TOKEN"]}"); raise if app_lock_val == false
@@ -8,7 +71,7 @@ class MessagesController < ApplicationController
       app = Application.find_by(token: request.headers["TOKEN"])
       if app.nil?
         # release the app lock
-        raise if remove_lock("Application_#{request.headers["TOKEN"]}", app_lock_val) == false 
+        remove_lock("Application_#{request.headers["TOKEN"]}", app_lock_val)
         return render json: { error: "no app exists with this token" }, status: 404 
       end
 
@@ -18,9 +81,9 @@ class MessagesController < ApplicationController
       chat = app.chats.find_by(chat_number: message_params[:chat_number])
       if chat.nil? && message_params[:chat_number] > app.chats_count
         # release the chat lock
-        raise if remove_lock("Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val) == false 
+        remove_lock("Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val)
         # release the app lock
-        raise if remove_lock("Application_#{request.headers["TOKEN"]}", app_lock_val) == false
+        remove_lock("Application_#{request.headers["TOKEN"]}", app_lock_val)
         render json: { error: "no chat with this number exists" }, status: 404
       elsif message_params[:chat_number] <= app.chats_count
         if chat.nil? 
@@ -37,9 +100,9 @@ class MessagesController < ApplicationController
           chat.id, app.token, chat.chat_number, chat.messages_count, message_params[:body]
         )
         # release the chat lock
-        raise if remove_lock("Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val) == false 
+        remove_lock("Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val)
         # release the app lock
-        raise if remove_lock("Application_#{request.headers["TOKEN"]}", app_lock_val) == false 
+        remove_lock("Application_#{request.headers["TOKEN"]}", app_lock_val)
         render(
           json: {
             success: true,
@@ -53,6 +116,8 @@ class MessagesController < ApplicationController
 
       end
     rescue
+      remove_lock("Chat_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}", chat_lock_val)
+      remove_lock("Application_#{request.headers["TOKEN"]}", app_lock_val)
       return render json: { error: "Something went wrong" }, status: 500
     end
   end
@@ -242,3 +307,7 @@ class MessagesController < ApplicationController
     params.require(:message).permit(:chat_number, :body, :message_number)
   end
 end
+
+# @redis.mapped_hmset("best3", message.attributes)
+#  @redis.hincrby("best3","chat_number", 1)
+# ap @redis.hgetall("best3").json?

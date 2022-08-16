@@ -16,6 +16,7 @@ Rails.application.routes.draw do
   get 'chats/show', to: "chats#show"
 
   post 'messages/create', to: "messages#create"
+  post 'messages/create_v2', to: "messages#create_v2"
   put 'messages/update', to: "messages#update"
   get 'messages/show', to: "messages#show"
   get 'messages', to: "messages#index"

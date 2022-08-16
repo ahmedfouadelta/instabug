@@ -6,7 +6,7 @@ class ApplicationController < ActionController::API
     val = SecureRandom.hex 12
 
     4.times do
-      locked = @redis.setnx(key,val)
+      locked = @redis.set(key, val, nx: true, px: 5000000) # tempo
       return val if(locked == true)
       sleep 0.05
     end
@@ -19,6 +19,7 @@ class ApplicationController < ActionController::API
       @redis.del(key, val)
       return true
     else
+      # log
       return false
     end
   end

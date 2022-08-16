@@ -43,15 +43,21 @@ services:
 
     sidekiq:
         depends_on:
-        - 'db'
-        - 'redis'
+            - 'db'
+            - 'redis'
         build: .
         command: bundle exec sidekiq
         volumes:
-        - '.:/project'
-        - '/project/tmp' # don't mount tmp directory
+            - '.:/project'
         environment:
             REDIS_URL_SIDEKIQ: redis://host.docker.internal:6379/12
+            DB_USER: root
+            DB_NAME: app
+            DB_PASSWORD: password
+            DB_HOST: db
+            REDIS_URL_CACHING: redis://redis:6379/0
+        stdin_open: true
+        tty: true
 volumes:
     mysql-data:
     redis:

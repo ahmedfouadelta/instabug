@@ -1,23 +1,44 @@
 class ChatsController < ApplicationController
-  def create
+  def initialize
+    @redis = Redis.new(host: "host.docker.internal")
+  end
+
+  def create #done
     begin
-    # add a lock here on redis for application with key of token
-      
-      app = Application.find_by!(token: request.headers["TOKEN"])
-      app.update!(chats_count: app.chats_count+1)
-      CreateChatJob.perform_sync(app.id, app.token, app.chats_count)
+      app_lock_val = add_lock("Lock_Application_#{request.headers["TOKEN"]}"); raise if app_lock_val == false
+      app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
+      if app.nil?
+        remove_lock("Lock_Application_#{request.headers["TOKEN"]}", app_lock_val)
+        return render json: { error: "Application's not found" }, status: 404
+      end
+
+      app.chats_count += 1
+      chat = Chat.new(
+        application_token: app.token,
+        chat_number: app.chats_count,
+        messages_count: 0
+      )
+
+      CreateOrUpdateApplicationJob.perform_in(20.seconds, app.token)
+      CreateOrUpdateChatJob.perform_in(20.seconds, app.token, app.chats_count)
+
+      success = @redis.multi do |multi|
+        multi.set("Application_#{request.headers["TOKEN"]}", app.to_json, px: 86400000)
+        multi.set("Chat_#{request.headers["TOKEN"]}_#{app.chats_count}", chat.to_json, px: 86400000)
+      end
+
+      remove_lock("Lock_Application_#{request.headers["TOKEN"]}", app_lock_val)
+      raise if success != ["OK", "OK"]
+
       render(
         json: {
           success: true,
-          Chat: {
-            chat_number: app.chats_count,
-            messages_count: 0,  
-          }
+          Chat: ChatSerializer.new(chat).to_h, 
         },
-          status: :created,
+          status: :ok,
       )
-    # release the lock
     rescue
+      remove_lock("Lock_Application_#{request.headers["TOKEN"]}", app_lock_val)
       render json: { error: "Something went wrong" }, status: 500
     end
   end
@@ -48,7 +69,7 @@ class ChatsController < ApplicationController
       
   end
 
-  def show
+  def show #done
     begin
       app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
       return render json: { error: "Application's not found" }, status: 404  if app.nil?

@@ -4,7 +4,7 @@ class MessagesController < ApplicationController
     @redis = Redis.new(host: "host.docker.internal")
   end
 
-  def create
+  def create #done
     begin
       app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
       return render json: { error: "Application's not found" }, status: 404  if app.nil?
@@ -126,7 +126,7 @@ class MessagesController < ApplicationController
     end
   end
 
-  def show
+  def show #done
     begin
       app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
       return render json: { error: "Application's not found" }, status: 404  if app.nil?

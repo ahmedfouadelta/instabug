@@ -9,7 +9,7 @@ class CreateOrUpdateChatJob
 
     if chat["id"].nil?
       app = ApplicationRepo.new.load_app(application_token)
-      created_chat = Chat.create(chat.attributes.merge!(app_id: app.id))
+      created_chat = Chat.create(chat.attributes.merge!(application_id: app.id))
       @redis = Redis.new(host: "host.docker.internal")
       @redis.set("Chat_#{application_token}_#{chat_number}", created_chat.to_json, px: 86400000)
     else

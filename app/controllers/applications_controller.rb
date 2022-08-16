@@ -16,7 +16,7 @@ class ApplicationsController < ApplicationController
     end
   end
 
-  def show
+  def show #done
     begin
       app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
       return render json: { error: "Application's not found" }, status: 404  if app.nil?

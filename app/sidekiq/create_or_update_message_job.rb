@@ -25,7 +25,7 @@ class CreateOrUpdateMessageJob
       @redis = Redis.new(host: "host.docker.internal")
       @redis.set("Message_#{application_token}_#{chat_number}_#{message_number}", created_message.to_json, px: 86400000)
     elsif message.present?
-      message.update!(body: message.body)
+      Message.find_by(id: message.id).update(body: message.body)
     end
   end
 end

@@ -25,11 +25,9 @@ class MessagesController < ApplicationController
         body: message_params[:body]
       )
 
-      CreateOrUpdateMessageJob.perform_in( #solve async problem
-        2.seconds, app.token, chat.chat_number, message.message_number #delay by 2 seconds needed to be added
-      )
+      CreateOrUpdateMessageJob.perform_in( 2.seconds, app.token, chat.chat_number, message.message_number)
       
-      CreateOrUpdateChatJob.perform_in(20.seconds, app.token, chat.chat_number #delay by 2 seconds needed to be added
+      CreateOrUpdateChatJob.perform_in(20.seconds, app.token, chat.chat_number 
       )
      
       success = @redis.multi do |multi|
@@ -61,68 +59,36 @@ class MessagesController < ApplicationController
     end
   end
 
-  def update
-    # add a lock here on redis for app with this token
-    app = Application.find_by(token: request.headers["TOKEN"]) 
-    if app.nil?
-      # release the app lock
-      return render json: { error: "no app exists with this token" }, status: 404 
-    end
+  def update #done
+    begin
+      app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
+      return render json: { error: "Application's not found" }, status: 404  if app.nil?
 
-    # add a lock here on redis for chat with this app token and chat number
-    chat = app.chats.find_by(chat_number: message_params[:chat_number])
-    if chat.nil? && message_params[:chat_number] > app.chats_count
-      # release the chat lock
-      # release the app lock
-      return render json: { error: "no chat exists with this number" }, status: 404
-    elsif chat.nil? && message_params[:chat_number] <= app.chats_count
-      # release the chat lock
-      # release the app lock
-      return render json: { error: "no message exist with this number" }, status: 404
-    end
+      chat = ChatRepo.new.load_chat(request.headers["TOKEN"], message_params[:chat_number])
+      return render json: { error: "Chat's not found" }, status: 404 if chat.nil?
 
-    message = chat.messages.find_by(
-      application_token: request.headers["TOKEN"], message_number: message_params[:message_number],
-      chat_number: message_params[:chat_number]
-    )
+      message = MessageRepo.new.load_message(request.headers["TOKEN"], chat.chat_number, message_params[:message_number])
+      return render json: { error: "Message's not found" }, status: 404 if message.nil?
 
-    if message.nil? &&  message_params[:message_number] > chat.messages_count
-      # release the chat lock
-      # release the app lock
-      return render json: { error: "no message exist with this number" }, status: 404
-    elsif message.nil? &&  message_params[:message_number] <= chat.messages_count
-      # it's better to update the redis key body to the new one and send another update background job then fake the response
-      message = Message.create!(
-        application_token: request.headers["TOKEN"],
-        message_number: message_params[:message_number],
-        chat_number: message_params[:chat_number],
-        body: message_params[:body],
-        chat_id: chat.id
+      message = Message.new(message.attributes.except("body").merge!("body": message_params[:body]))
+
+      CreateOrUpdateMessageJob.perform_in( 2.seconds, app.token, chat.chat_number, message.message_number)
+
+      @redis.set(
+        "Message_#{request.headers["TOKEN"]}_#{message_params[:chat_number]}_#{message.message_number}",
+        message.to_json, px: 86400000
       )
-      redis = Redis.new(host: "host.docker.internal")
-      redis.del("#{request.headers["TOKEN"]}_#{message_params[:chat_number].to_s}_#{message_params[:message_number].to_s}")
-      # release the chat lock
-      # release the app lock
-      return render(
+
+      render(
         json: {
           success: true,
           message: MessageSerializer.new(message).to_h
         },
           status: :ok,
       )
-    else
-      # it's better to update the redis key body to the new one and send another update background job then fake the response
-      # expires after 24 hours
-      message.update!(body: message_params[:body])
-      # release the chat lock
-      # release the app lock
-      return render(
-        json: {
-          success: true,
-          message: MessageSerializer.new(message).to_h
-        },
-          status: :ok,
-      )
+
+    rescue
+      return render json: { error: "Something went wrong" }, status: 500
     end
   end
 

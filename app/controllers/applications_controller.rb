@@ -50,8 +50,8 @@ class ApplicationsController < ApplicationController
       app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
       return render json: { error: "Application's not found" }, status: 404  if app.nil?
 
-      app = Application.new(app.attributes.merge!(name: application_params["name"]))
-
+      app = Application.new(app.attributes.except("name").merge!("name": application_params["name"]))
+      
       CreateOrUpdateApplicationJob.perform_in(20.seconds, app.token)
       @redis.set(
         "Application_#{app.token}", app.to_json, px: 86400000

@@ -43,30 +43,28 @@ class ChatsController < ApplicationController
     end
   end
 
-  def index
+  def index #done
     begin
-      app = Application.find_by!(token: request.headers["TOKEN"])
+      app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
+      return render json: { error: "Application's not found" }, status: 404  if app.nil?
+      return render json: { error: "This Application has no chats" }, status: 404  if app.chats_count.zero?
 
-      all_chats_number = Array(1..app.chats_count)
-      created_chats_number = app.chats.order("chat_number ASC").pluck(:chat_number)
-      not_created_yet_chats_number = all_chats_number - created_chats_number
-      arr_of_chats = ChatSerializer.new(app.chats).to_h
-
-      not_created_yet_chats_number.each do |chat_number|
-        arr_of_chats.push({chat_number: chat_number, messages_count: 0})
+      chats_arr = []
+      (1..app.chats_count).each do |chat_number|
+        chat = ChatRepo.new.load_chat(request.headers["TOKEN"], chat_number)
+        chats_arr << {chat_number: chat.chat_number, messages_count: chat.messages_count}
       end
 
       render(
         json: {
           success: true,
-          Chats: arr_of_chats, 
+          Chats: chats_arr
         },
           status: :ok,
       )
     rescue
       render json: { error: "Something went wrong" }, status: 500
     end
-      
   end
 
   def show #done

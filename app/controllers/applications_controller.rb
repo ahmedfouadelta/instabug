@@ -4,7 +4,7 @@ class ApplicationsController < ApplicationController
     @redis = Redis.new(host: "host.docker.internal")
   end
 
-  def create
+  def create #done
     begin
       token = SecureRandom.hex 12
       app = Application.new(
@@ -45,10 +45,18 @@ class ApplicationsController < ApplicationController
     end
   end
 
-  def update
+  def update #done
     begin
-      app = Application.find_by(token: request.headers["TOKEN"])
-      app.update!(name: application_params[:name])
+      app = ApplicationRepo.new.load_app(request.headers["TOKEN"])
+      return render json: { error: "Application's not found" }, status: 404  if app.nil?
+
+      app = Application.new(app.attributes.merge!(name: application_params["name"]))
+
+      CreateOrUpdateApplicationJob.perform_in(20.seconds, app.token)
+      @redis.set(
+        "Application_#{app.token}", app.to_json, px: 86400000
+      )
+
       render(
         json: {
           success: true,

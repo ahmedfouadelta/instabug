@@ -1,8 +1,20 @@
 require "redis"
 class ApplicationsController < ApplicationController
+  def initialize
+    @redis = Redis.new(host: "host.docker.internal")
+  end
+
   def create
     begin
-      app = Application.create!(name: application_params[:name], token: (SecureRandom.hex 12))
+      token = SecureRandom.hex 12
+      app = Application.new(
+        name: application_params[:name],
+        token: token
+      )
+
+      CreateOrUpdateApplicationJob.perform_in(20.seconds, app.token)
+      @redis.set("Application_#{app.token}", app.to_json, px: 86400000)
+
       render(
         json: {
           success: true,

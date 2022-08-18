@@ -51,7 +51,7 @@ to access the rails console too, use
 
 ## Redis Dashboard
 
-- [Access Redis Dashboard](http://localhost:3001/sidekiq/)
+- after running up the project you can [Access Redis Dashboard](http://localhost:3001/sidekiq/)
 
 ## Requests File
 

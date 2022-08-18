@@ -6,6 +6,8 @@
  - [Pre Installations](#pre-installations)
  - [Project Cloning](#project-cloning)
  - [Running The Project](#running-the-project)
+ - [Redis Dashboard](#redis-dashboard)
+ - [Requests File](#requests-file)
 
 ## About
 
@@ -46,3 +48,11 @@ to debug the project using byebug while the docker is app use
 to access the rails console too, use 
 
 `docker-compose run app rails console`
+
+## Redis Dashboard
+
+- [Access Redis Dashboard](http://localhost:3001/sidekiq/)
+
+## Requests File
+
+- [Download Requests File](https://drive.google.com/file/d/1ztoXd8bNxIZEt2Sg299VsjgiaPE2FMio/view?usp=sharing) and import it to Postman.

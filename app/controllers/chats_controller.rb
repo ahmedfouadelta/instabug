@@ -49,10 +49,18 @@ class ChatsController < ApplicationController
       return render json: { error: "Application's not found" }, status: 404  if app.nil?
       return render json: { error: "This Application has no chats" }, status: 404  if app.chats_count.zero?
 
+      database_chats = app.chats
+      database_chats_ids = app.chats.pluck(:chat_number)
+      all_chats_ids = Array(1..app.chats_count)
+      redis_chats_ids = all_chats_ids - database_chats_ids
       chats_arr = []
-      (1..app.chats_count).each do |chat_number|
-        chat = ChatRepo.new.load_chat(request.headers["TOKEN"], chat_number)
+      database_chats.each do |chat|
         chats_arr << {chat_number: chat.chat_number, messages_count: chat.messages_count}
+      end
+
+      redis_chats_ids.each do |chat_number|
+        chat = JSON.parse(@redis.get("Chat_#{request.headers["TOKEN"]}_#{chat_number}"))
+        chats_arr << {chat_number: chat["chat_number"], messages_count: chat["messages_count"]}
       end
 
       render(

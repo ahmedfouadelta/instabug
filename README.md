@@ -8,6 +8,7 @@
  - [Running The Project](#running-the-project)
  - [Redis Dashboard](#redis-dashboard)
  - [Requests File](#requests-file)
+ - [Application Endpoints](#application-endpoints)
 
 ## About
 
@@ -56,3 +57,10 @@ to access the rails console too, use
 ## Requests File
 
 - [Download Requests File](https://drive.google.com/file/d/1ztoXd8bNxIZEt2Sg299VsjgiaPE2FMio/view?usp=sharing) and import it to Postman.
+
+## Application Endpoints
+
+Routes  | Second Header
+------------- | -------------
+Content Cell  | Content Cell
+Content Cell  | Content Cell

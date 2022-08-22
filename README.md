@@ -40,6 +40,7 @@
 to run the project you need to do the following 
 
 `docker-compose build`
+
 `docker-compose up`
 
 to debug the project using byebug while the docker is app use
